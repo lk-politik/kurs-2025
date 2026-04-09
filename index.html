@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Politik-LK — SLP Perl</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;1,9..144,400&family=DM+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    :root { --acc: #6b7280; --accL: #f0f1f3; --accG: rgba(107,114,128,.08); }
+
+    .site-header {
+      text-align: center; padding: 2.5rem 1.5rem 2rem;
+      border-bottom: 1px solid var(--border); margin-bottom: 2rem;
+    }
+    .site-header .school-label {
+      font-family: var(--ff-mono); font-size: .75rem;
+      text-transform: uppercase; letter-spacing: .1em;
+      color: var(--ink3); margin-bottom: .6rem;
+    }
+    .site-header h1 { margin-bottom: .4rem; }
+    .site-header .subtitle { font-size: 1rem; color: var(--ink2); }
+
+    /* Global progress bar */
+    .global-progress {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--r); padding: .9rem 1.25rem;
+      margin-bottom: 1.75rem;
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .global-progress-label {
+      font-family: var(--ff-mono); font-size: .68rem;
+      text-transform: uppercase; letter-spacing: .08em;
+      color: var(--ink3); white-space: nowrap;
+    }
+    .prog-bar {
+      flex: 1; height: 6px; background: var(--border-l);
+      border-radius: 99px; overflow: hidden;
+    }
+    .prog-bar-fill {
+      height: 100%; border-radius: 99px; background: var(--acc);
+      transition: width .4s ease;
+    }
+    .global-progress-pct {
+      font-family: var(--ff-mono); font-size: .72rem;
+      color: var(--ink3); white-space: nowrap;
+    }
+
+    /* Chapter accordion */
+    .chapters { display: flex; flex-direction: column; gap: .6rem; }
+    .chapter {
+      background: var(--card); border: 1px solid var(--border);
+      border-left: 4px solid var(--acc);
+      border-radius: var(--r); overflow: hidden;
+    }
+    .chapter.placeholder {
+      opacity: .66;
+    }
+    .chapter.placeholder .chapter-row:hover {
+      background: transparent;
+    }
+    .chapter.placeholder .chapter-name,
+    .chapter.placeholder .chapter-meta,
+    .chapter.placeholder .chapter-prog-pct,
+    .chapter.placeholder .chapter-icon,
+    .chapter.placeholder .unit-empty {
+      color: var(--ink3);
+    }
+    .chapter-row {
+      display: flex; align-items: center; gap: .9rem;
+      padding: .9rem 1.25rem; cursor: pointer;
+      user-select: none; transition: background .15s;
+    }
+    .chapter-row:hover { background: var(--accG); }
+    .chapter-icon {
+      font-family: var(--ff-mono); font-size: .65rem;
+      color: var(--ink3); transition: transform .2s; flex-shrink: 0;
+    }
+    .chapter.open .chapter-icon { transform: rotate(90deg); }
+    .chapter-name {
+      font-family: var(--ff-head); font-size: 1rem;
+      font-weight: 600; color: var(--ink); flex: 1;
+    }
+    .chapter-meta {
+      font-family: var(--ff-mono); font-size: .65rem;
+      color: var(--ink3); white-space: nowrap; flex-shrink: 0;
+    }
+    .chapter-prog {
+      display: flex; align-items: center; gap: .55rem;
+      flex-shrink: 0; min-width: 110px;
+    }
+    .chapter-prog .prog-bar { height: 5px; min-width: 60px; flex: 1; }
+    .chapter-prog-pct {
+      font-family: var(--ff-mono); font-size: .65rem;
+      color: var(--ink3); min-width: 2.2rem; text-align: right;
+    }
+
+    /* Unit list */
+    .unit-list { border-top: 1px solid var(--border-l); display: none; }
+    .chapter.open .unit-list { display: block; }
+    .unit-empty {
+      padding: .85rem 1.25rem .95rem 2.75rem;
+      color: var(--ink3);
+      font-size: .85rem;
+      font-style: italic;
+    }
+    .fb-cta-wrap { text-align:center; margin:1.8rem 0 1.3rem; }
+    .fb-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: .55rem;
+      font-family: var(--ff-head);
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      text-decoration: none;
+      background: var(--acc);
+      border: 1.5px solid var(--acc);
+      padding: .65em 1.25em;
+      border-radius: 999px;
+      box-shadow: 0 10px 22px rgba(45,89,134,.14);
+      transition: transform .15s ease, box-shadow .15s ease, filter .15s ease;
+    }
+    .fb-cta:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px rgba(45,89,134,.18);
+      filter: brightness(.98);
+    }
+    .fb-cta-sub {
+      display: block;
+      margin-top: .55rem;
+      font-size: .78rem;
+      color: var(--ink3);
+    }
+
+    .unit-row {
+      display: flex; align-items: center; gap: .85rem;
+      padding: .7rem 1.25rem .7rem 2.75rem;
+      border-bottom: 1px solid var(--border-l);
+      text-decoration: none; color: inherit;
+      transition: background .15s;
+    }
+    .unit-row:last-child { border-bottom: none; }
+    a.unit-row:hover { background: var(--accG); }
+    .unit-row.locked { opacity: .4; pointer-events: none; }
+
+    .unit-num {
+      font-family: var(--ff-mono); font-size: .65rem; font-weight: 500;
+      color: var(--acc); background: var(--accL);
+      border-radius: 99px; padding: .18em .65em;
+      flex-shrink: 0; white-space: nowrap;
+    }
+    .unit-row.locked .unit-num { color: var(--ink3); background: var(--border-l); }
+    .unit-title { font-size: .9rem; font-weight: 500; flex: 1; color: var(--ink); }
+    .unit-prog {
+      display: flex; align-items: center; gap: .5rem;
+      flex-shrink: 0; min-width: 90px;
+    }
+    .unit-prog .prog-bar { height: 4px; min-width: 50px; }
+    .unit-prog-pct {
+      font-family: var(--ff-mono); font-size: .62rem;
+      color: var(--ink3); min-width: 2rem; text-align: right;
+    }
+    .unit-arrow { font-size: .85rem; color: var(--ink3); flex-shrink: 0; }
+    .unit-lock  { font-size: .75rem; color: var(--ink3); flex-shrink: 0; }
+
+    /* Simulation banner */
+    .sim-banner {
+      margin: .5rem 1.25rem .5rem 2.75rem;
+      background: var(--accL, #f0f1f3);
+      border: 1px solid var(--acc, #6b7280);
+      border-radius: 8px;
+      padding: .75rem 1rem;
+    }
+    .sim-label {
+      display: block;
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--acc, #6b7280);
+      margin-bottom: .5rem;
+    }
+    .sim-lock-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      padding: .15rem 0;
+    }
+    .sim-label-inline {
+      font-family: 'IBM Plex Mono', monospace;
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--acc, #6b7280);
+    }
+    .sim-lock-icon {
+      font-size: .7rem;
+      color: var(--ink3, #8a8278);
+    }
+    .sim-pw-wrap .sim-label { margin-bottom: .4rem; }
+    .sim-pw-row {
+      display: flex;
+      gap: .4rem;
+      align-items: center;
+    }
+    .sim-pw-input {
+      flex: 1;
+      font-family: inherit;
+      font-size: .82rem;
+      padding: .35rem .6rem;
+      border: 1px solid var(--border-l, #d6cfc4);
+      border-radius: 6px;
+      background: #fff;
+      outline: none;
+    }
+    .sim-pw-input:focus { border-color: var(--acc, #6b7280); }
+    .sim-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: .5rem;
+    }
+    .sim-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .4rem;
+      padding: .55rem .75rem;
+      background: var(--acc, #6b7280);
+      color: #fff;
+      font-family: inherit;
+      font-size: .82rem;
+      font-weight: 600;
+      border-radius: 6px;
+      text-decoration: none;
+      transition: opacity .15s;
+    }
+    .sim-btn:hover { opacity: .85; }
+
+    @media (max-width: 600px) {
+      .chapter-meta { display: none; }
+      .unit-prog { min-width: 70px; }
+    }
+  </style>
+</head>
+<body>
+<div class="page-wrap">
+
+  <header class="site-header">
+    <p class="school-label">Deutsch-Luxemburgisches Schengen-Lyzeum Perl</p>
+    <h1>Politik-Leistungskurs (GOS)</h1>
+    <p class="subtitle">Digitale Lerneinheiten · Schuljahr 2025/26</p>
+  </header>
+
+  <div class="global-progress">
+    <span class="global-progress-label">Gesamtfortschritt</span>
+    <div class="prog-bar"><div class="prog-bar-fill" id="global-bar" style="width:0%"></div></div>
+    <span class="global-progress-pct" id="global-pct">0 %</span>
+  </div>
+
+  <div class="chapters" id="chapters"></div>
+
+  <div class="fb-cta-wrap">
+    <a href="fachbegriffe.html" class="fb-cta">
+      <span aria-hidden="true">&#128218;</span>
+      <span>Fachbegriffe</span>
+    </a>
+    <span class="fb-cta-sub">Glossar, Lehrplanbegriffe und Kapitelvokabular</span>
+  </div>
+
+  <footer class="page-footer">
+    <span>Politik-LK · Deutsch-Luxemburgisches Schengen-Lyzeum Perl</span>
+    <span>© 2025/26</span>
+  </footer>
+
+</div>
+
+<script>
+/* Minimal Progress shim for index — reads localStorage only.
+   Full implementation lives in engine.js (PLK.Progress). */
+var Progress = {
+  load: function (id) {
+    try { var raw = localStorage.getItem('plk_' + id); return raw ? JSON.parse(raw) : null; }
+    catch (e) { return null; }
+  }
+};
+/* 3.3 done in class — seed as complete so gate chain is satisfied */
+(function () {
+  try {
+    var key = 'plk_3-3';
+    var existing = localStorage.getItem(key);
+    if (!existing || JSON.parse(existing).progressPct < 100) {
+      localStorage.setItem(key, JSON.stringify({ complete: true, progressPct: 100, gates: { '1': true, '2': true, '3': true } }));
+    }
+  } catch (e) {}
+})();
+</script>
+<script>
+/* ==========================================================
+   index.js (inline)
+   ========================================================== */
+
+var SECTIONS = [
+  {
+    id: 'ch-0-erfolge',
+    label: 'Erfolge der europäischen Integration',
+    color: '#2d5986',
+    colorL: 'rgba(45,89,134,.08)',
+    colorG: 'rgba(45,89,134,.08)',
+    units: [
+      { id: '3-1', num: '3.1', title: 'Erfolge der europäischen Integration', href: 'einheiten/3-1.html', status: 'pending', color: '#2d5986' }
+    ]
+  },
+  {
+    id: 'ch-1-eu-organisation',
+    label: 'Die politische Organisation der EU',
+    color: '#2d5986',
+    colorL: 'rgba(45,89,134,.08)',
+    colorG: 'rgba(45,89,134,.08)',
+    units: [
+      { id: '3-2', num: '3.2', title: 'Die Organe der EU', href: 'einheiten/3-2.html', status: 'pending', color: '#2d5986' },
+      { id: '3-3', num: '3.3', title: 'Der EU-Gesetzgebungsprozess', href: 'einheiten/3-3.html', status: 'pending', color: '#2d5986' },
+      { id: '3-4', num: '3.4', title: 'Das Mehrebenensystem der EU', href: 'einheiten/3-4.html', status: 'pending', color: '#2d5986' }
+    ]
+  },
+  {
+    id: 'ch-2-gemeinsamer-markt',
+    label: 'Der Gemeinsame Markt',
+    color: '#3d7a3d',
+    colorL: 'rgba(61,122,61,.08)',
+    colorG: 'rgba(61,122,61,.08)',
+    units: [
+      { id: '3-5', num: '3.5', title: 'Der EU-Binnenmarkt und die vier Freiheiten', href: 'einheiten/3-5.html', status: 'pending', color: '#3d7a3d' },
+      { id: '3-6', num: '3.6', title: 'Wirtschaftliche Integration in der EU', href: 'einheiten/3-6.html', status: 'pending', color: '#3d7a3d' }
+    ]
+  },
+  {
+    id: 'ch-3-waehrungsunion',
+    label: 'Währungsunion',
+    color: '#8b6914',
+    colorL: 'rgba(139,105,20,.08)',
+    colorG: 'rgba(139,105,20,.08)',
+    units: [
+      { id: '3-7', num: '3.7', title: 'Die Eurozone', href: 'einheiten/3-7.html', status: 'pending', color: '#8b6914' },
+      { id: '3-8', num: '3.8', title: 'EZB und Stabilitätspakt', href: 'einheiten/3-8.html', status: 'pending', color: '#8b6914' },
+      { id: '3-9', num: '3.9', title: 'Reform der Europäischen Währungsunion', href: 'einheiten/3-9.html', status: 'pending', color: '#8b6914' }
+    ]
+  },
+  {
+    id: 'ch-4-gasp',
+    label: 'Gemeinsame Außen- und Sicherheitspolitik',
+    color: '#8b2252',
+    colorL: 'rgba(139,34,82,.08)',
+    colorG: 'rgba(139,34,82,.08)',
+    units: [
+      { id: '3-10', num: '3.10', title: 'GASP und ESVP', href: 'einheiten/3-10.html', status: 'pending', color: '#8b2252' },
+      { id: '3-11', num: '3.11', title: 'Die Hohe Vertreterin für Außen- und Sicherheitspolitik', href: 'einheiten/3-11.html', status: 'pending', color: '#8b2252' }
+    ]
+  },
+  {
+    id: 'ch-5-asylpolitik',
+    label: 'Asyl- und Flüchtlingspolitik',
+    color: '#4a6741',
+    colorL: 'rgba(74,103,65,.08)',
+    colorG: 'rgba(74,103,65,.08)',
+    units: [
+      { id: '3-12', num: '3.12', title: 'Asylpolitik der EU', href: 'einheiten/3-12.html', status: 'pending', color: '#4a6741' },
+      { id: '3-13', num: '3.13', title: 'Rechtliche Grundlagen der Asylpolitik', href: 'einheiten/3-13.html', status: 'pending', color: '#4a6741' }
+    ]
+  },
+  {
+    id: 'ch-6-zukunft-eu',
+    label: 'Die Zukunft der EU',
+    color: '#5b4a8b',
+    colorL: 'rgba(91,74,139,.08)',
+    colorG: 'rgba(91,74,139,.08)',
+    units: [
+      { id: '3-14', num: '3.14', title: 'EU-Erweiterung', href: 'einheiten/3-14.html', status: 'pending', color: '#5b4a8b' },
+      { id: '3-15', num: '3.15', title: 'Beitrittskandidaten', href: 'einheiten/3-15.html', status: 'pending', color: '#5b4a8b' },
+      { id: '3-16', num: '3.16', title: 'EU-Austritt', href: 'einheiten/3-16.html', status: 'pending', color: '#5b4a8b' },
+      { id: '3-18', num: '3.18', title: 'Brexit', href: 'einheiten/3-18.html', status: 'pending', color: '#5b4a8b' },
+      { id: '3-19', num: '3.19', title: 'Bundesstaat vs. Staatenbund', href: 'einheiten/3-19.html', status: 'pending', color: '#5b4a8b' },
+      { id: '3-20', num: '3.20', title: 'Differenzierte Integration', href: 'einheiten/3-20.html', status: 'pending', color: '#5b4a8b' }
+    ]
+  }
+];
+
+/* ── Progress helpers ───────────────────────────────────── */
+function _calcPct(id) {
+  var prog = Progress.load(id);
+  if (!prog) return 0;
+  var unit = _findUnit(id);
+
+  if (unit && unit.gates) {
+    var total = unit.gates;
+    var done  = 0;
+    var keys  = prog.gates ? Object.keys(prog.gates) : [];
+
+    /* Deduplicate: "1" and "qg1" both refer to gate 1 — normalize before counting */
+    var counted = {};
+    for (var i = 0; i < keys.length; i++) {
+      if (prog.gates[keys[i]]) {
+        var nr = parseInt(keys[i].replace('qg', ''), 10);
+        if (!isNaN(nr)) counted[nr] = true;
+      }
+    }
+    done = Math.min(Object.keys(counted).length, unit.gates);
+
+    if (unit.einstieg) {
+      total += 1;
+      if (prog.einstieg) done += 1;
+    }
+
+    if (unit.abPts > 0) {
+      total += 1;
+      done += Math.min((prog.abPts || 0) / unit.abPts, 1);
+    }
+
+    return total > 0 ? Math.round(done / total * 100) : 0;
+  }
+
+  if (typeof prog.progressPct === 'number') return Math.max(0, Math.min(100, Math.round(prog.progressPct)));
+  if (prog.complete === true) return 100;
+  if (!prog.gates) return 0;
+  var fallbackKeys = Object.keys(prog.gates);
+  if (!fallbackKeys.length) return 0;
+  var fallbackDone = 0;
+  for (var j = 0; j < fallbackKeys.length; j++) {
+    if (prog.gates[fallbackKeys[j]]) fallbackDone++;
+  }
+  return Math.round(fallbackDone / fallbackKeys.length * 100);
+}
+
+function _isComplete(id) {
+  return _calcPct(id) >= 100;
+}
+
+function _findUnit(id) {
+  var found = null;
+  SECTIONS.forEach(function (sec) {
+    sec.units.forEach(function (u) {
+      if (u.id === id) found = u;
+    });
+  });
+  return found;
+}
+
+function _getPrereqId(unit, idx, rendered) {
+  if (unit.freeUnlock) return null;
+  if (unit.prereq) return unit.prereq;
+  if (idx > 0) return rendered[idx - 1].id;
+  return null;
+}
+
+/* ── Render ─────────────────────────────────────────────── */
+function _renderAll() {
+  /* Collect all rendered (non-pending) units */
+  var allRendered = [];
+  SECTIONS.forEach(function (sec) {
+    sec.units.forEach(function (u) {
+      if (u.status !== 'pending') allRendered.push(u);
+    });
+  });
+
+  /* Global progress */
+  var globalPct = 0;
+  if (allRendered.length) {
+    var sum = 0;
+    allRendered.forEach(function (u) { sum += _calcPct(u.id); });
+    globalPct = Math.round(sum / allRendered.length);
+  }
+  document.getElementById('global-bar').style.width = globalPct + '%';
+  document.getElementById('global-pct').textContent = globalPct + ' %';
+
+  /* Chapter accordion */
+  var container = document.getElementById('chapters');
+  container.innerHTML = '';
+  var firstChapterId = SECTIONS.length ? SECTIONS[0].id : null;
+
+  for (var s = 0; s < SECTIONS.length; s++) {
+    var secUnits = SECTIONS[s].units || [];
+    for (var su = 0; su < secUnits.length; su++) {
+      if (secUnits[su].status !== 'pending') {
+        firstChapterId = SECTIONS[s].id;
+        s = SECTIONS.length;
+        break;
+      }
+    }
+  }
+
+  SECTIONS.forEach(function (sec) {
+    var rendered = [];
+    sec.units.forEach(function (u) {
+      if (u.status !== 'pending') rendered.push(u);
+    });
+
+    /* Chapter aggregate */
+    var chSum = 0;
+    rendered.forEach(function (u) { chSum += _calcPct(u.id); });
+    var chPct  = rendered.length ? Math.round(chSum / rendered.length) : 0;
+    var chColor = sec.color || ((rendered.length === 1 && rendered[0].color) ? rendered[0].color : '#6b7280');
+    var chColorL = sec.colorL || '#f0f1f3';
+    var chColorG = sec.colorG || 'rgba(107,114,128,.08)';
+    var unitWord = rendered.length === 1 ? 'Einheit' : 'Einheiten';
+
+    var ch = document.createElement('div');
+    ch.className = 'chapter' + (!rendered.length ? ' placeholder' : '') + (sec.id === firstChapterId ? ' open' : '');
+    ch.id = 'ch-' + sec.id;
+    ch.style.setProperty('--acc', chColor);
+    ch.style.setProperty('--accL', chColorL);
+    ch.style.setProperty('--accG', chColorG);
+
+    ch.innerHTML =
+      '<div class="chapter-row" onclick="toggleChapter(\'ch-' + sec.id + '\')">' +
+        '<span class="chapter-icon">&#9658;</span>' +
+        '<span class="chapter-name">' + sec.label + '</span>' +
+        '<span class="chapter-meta">' + rendered.length + ' ' + unitWord + '</span>' +
+        '<div class="chapter-prog">' +
+          '<div class="prog-bar">' +
+            '<div class="prog-bar-fill" style="width:' + chPct + '%;background:' + chColor + '"></div>' +
+          '</div>' +
+          '<span class="chapter-prog-pct">' + chPct + ' %</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="unit-list" id="ul-' + sec.id + '"></div>';
+
+    container.appendChild(ch);
+
+    /* Unit rows */
+    var ul = document.getElementById('ul-' + sec.id);
+    if (!rendered.length) {
+      ul.innerHTML = '<div class="unit-empty">Noch keine Einheiten angelegt.</div>';
+      return;
+    }
+    rendered.forEach(function (u, idx) {
+      var prereqId = _getPrereqId(u, idx, rendered);
+      var locked = prereqId ? !_isComplete(prereqId) : false;
+      var pct    = _calcPct(u.id);
+      var barClr = u.color ? u.color : 'var(--acc)';
+      var row;
+
+      if (locked) {
+        row = document.createElement('div');
+        row.className = 'unit-row locked';
+        row.innerHTML =
+          '<span class="unit-num">' + u.num + '</span>' +
+          '<span class="unit-title">' + u.title + '</span>' +
+          '<div class="unit-prog">' +
+            '<div class="prog-bar"><div class="prog-bar-fill" style="width:0%"></div></div>' +
+            '<span class="unit-prog-pct">&#8212;</span>' +
+          '</div>' +
+          '<span class="unit-lock">&#128274;</span>';
+      } else {
+        row = document.createElement('a');
+        row.className = 'unit-row';
+        row.href = u.href;
+        row.innerHTML =
+          '<span class="unit-num">' + u.num + '</span>' +
+          '<span class="unit-title">' + u.title + '</span>' +
+          '<div class="unit-prog">' +
+            '<div class="prog-bar"><div class="prog-bar-fill" style="width:' + pct + '%;background:' + barClr + '"></div></div>' +
+            '<span class="unit-prog-pct">' + pct + ' %</span>' +
+          '</div>' +
+          '<span class="unit-arrow">&#8594;</span>';
+      }
+      ul.appendChild(row);
+
+      /* Simulation banner after 3.4 — only if unit is complete */
+      if (u.id === '3-4' && pct >= 100) {
+        var sim = document.createElement('div');
+        sim.className = 'sim-banner';
+        sim.id = 'sim-banner';
+        sim.innerHTML =
+          '<div class="sim-lock" id="sim-lock">' +
+            '<div class="sim-lock-row" onclick="document.getElementById(\'sim-pw-wrap\').style.display=\'flex\';this.style.display=\'none\'">' +
+              '<span class="sim-label-inline">🏛️ EU-Werkstatt · Simulation</span>' +
+              '<span class="sim-lock-icon">&#128274;</span>' +
+            '</div>' +
+            '<div class="sim-pw-wrap" id="sim-pw-wrap" style="display:none">' +
+              '<span class="sim-label">🏛️ EU-Werkstatt · Simulation</span>' +
+              '<div class="sim-pw-row">' +
+                '<input type="password" id="sim-pw" class="sim-pw-input" placeholder="Passwort …" onkeydown="if(event.key===\'Enter\')unlockSim()">' +
+                '<button class="btn btn-primary btn-sm" onclick="unlockSim()">&#128275;</button>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="sim-content" id="sim-content" style="display:none">' +
+            '<span class="sim-label">🏛️ EU-Werkstatt · Simulation</span>' +
+            '<div class="sim-buttons">' +
+              '<a class="sim-btn" href="legacy/3-4_EU-Werkstatt_Social-Media_v1.0.html">📋 Ablauf</a>' +
+              '<a class="sim-btn" href="legacy/3-4_EU-Werkstatt_Rollenkarten_v1_1.html">🎭 Rollen</a>' +
+            '</div>' +
+          '</div>';
+        ul.appendChild(sim);
+      }
+    });
+  });
+}
+
+function unlockSim() {
+  var pw = document.getElementById('sim-pw');
+  if (!pw) return;
+  var val = pw.value.trim().toLowerCase().replace(/\s+/g, ' ');
+  if (val === 'password') {
+    document.getElementById('sim-lock').style.display = 'none';
+    document.getElementById('sim-content').style.display = '';
+    try { localStorage.setItem('plk_sim_3-4', '1'); } catch (e) {}
+  } else {
+    pw.style.borderColor = '#b83232';
+    pw.value = '';
+    pw.placeholder = 'Falsches Passwort …';
+  }
+}
+/* Auto-unlock if previously unlocked */
+(function () {
+  try {
+    if (localStorage.getItem('plk_sim_3-4') === '1') {
+      setTimeout(function () {
+        var lock = document.getElementById('sim-lock');
+        var content = document.getElementById('sim-content');
+        if (lock) lock.style.display = 'none';
+        if (content) content.style.display = '';
+      }, 100);
+    }
+  } catch (e) {}
+})();
+
+function toggleChapter(id) {
+  var el = document.getElementById(id);
+  var wasOpen = el.classList.contains('open');
+  document.querySelectorAll('.chapter').forEach(function (c) { c.classList.remove('open'); });
+  if (!wasOpen) el.classList.add('open');
+}
+
+/* ── Load units.json and merge into SECTIONS ──────────── */
+function _mergeUnits(data) {
+  var map = {};
+  for (var i = 0; i < data.length; i++) {
+    map[data[i].id] = data[i];
+  }
+  SECTIONS.forEach(function (sec) {
+    sec.units.forEach(function (u) {
+      var remote = map[u.id];
+      if (!remote) return;
+      if (remote.title)  u.title  = remote.title;
+      if (remote.status) u.status = remote.status;
+      if (remote.accent) u.color  = remote.accent;
+      if (remote.gates) u.gates = remote.gates;
+      if (Object.prototype.hasOwnProperty.call(remote, 'abPts')) u.abPts = remote.abPts;
+      if (Object.prototype.hasOwnProperty.call(remote, 'einstieg')) u.einstieg = !!remote.einstieg;
+      if (Object.prototype.hasOwnProperty.call(remote, 'freeUnlock')) u.freeUnlock = !!remote.freeUnlock;
+      if (Object.prototype.hasOwnProperty.call(remote, 'prereq')) u.prereq = remote.prereq;
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', 'data/units.json', true);
+  xhr.onload = function () {
+    if (xhr.status === 200 || (xhr.status === 0 && xhr.responseText)) {
+      try { _mergeUnits(JSON.parse(xhr.responseText)); } catch (e) { console.warn('[index] units.json parse error', e); }
+    }
+    _renderAll();
+  };
+  xhr.onerror = function () { _renderAll(); };
+  xhr.send();
+});
+</script>
+</body>
+</html>
